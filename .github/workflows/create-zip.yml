@@ -1,11 +1,11 @@
 name: Auto-generate ZIP on changes
-
 on:
   push:
-    branches: [ main, master ]  # O las ramas que quieras
+    branches: [ main, master ]
     paths:
-      - 'FUENTES/**'  # Solo cuando cambie esta carpeta
-
+      - 'FUENTES/**'  # Carpeta que monitoreas
+  workflow_dispatch:    # Para ejecutar manualmente
+  
 jobs:
   create-zip:
     runs-on: ubuntu-latest
@@ -16,11 +16,22 @@ jobs:
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
     
+    - name: Verify folder exists
+      run: |
+        if [ ! -d "FUENTES" ]; then
+          echo "❌ La carpeta FUENTES no existe"
+          ls -la
+          exit 1
+        fi
+        echo "✅ Carpeta FUENTES encontrada"
+    
     - name: Create ZIP file
       run: |
-        cd mi-carpeta
-        zip -r ../FUENTES.zip .
+        cd FUENTES
+        zip -r ../FUENTES.zip . -x "*.git*" "*.DS_Store*"
         cd ..
+        echo "✅ ZIP creado: FUENTES.zip"
+        ls -la FUENTES.zip
     
     - name: Commit and push ZIP
       run: |
@@ -29,7 +40,7 @@ jobs:
         
         # Solo hacer commit si hay cambios
         if [ -n "$(git status --porcelain)" ]; then
-          git add mi-carpeta.zip
+          git add FUENTES.zip
           git commit -m "🤖 Auto-update ZIP file [skip ci]"
           git push
         else
