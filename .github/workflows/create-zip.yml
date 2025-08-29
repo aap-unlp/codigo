@@ -1,6 +1,10 @@
 name: Auto-generate ZIP on changes
 on:
-  workflow_dispatch:  # Solo manual por ahora
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'FUENTES/**'      # Se activa automáticamente
+  workflow_dispatch:      # Y también manual
 
 permissions:
   contents: write
@@ -25,5 +29,5 @@ jobs:
         
         # Simple commit y push
         git add FUENTES.zip
-        git commit -m "Update ZIP" || exit 0
+        git commit -m "🤖 Update FUENTES.zip [skip ci]" || exit 0
         git push || (git pull --rebase && git push)
