@@ -19,8 +19,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        # Necesario para poder hacer pull y push
-        fetch-depth: 0
+        fetch-depth: 0  # Necesario para pull y push
 
     - name: Create fresh ZIP file
       run: |
@@ -52,15 +51,14 @@ jobs:
 
         git add FUENTES.zip
 
-        # Verificar si hay cambios para commitear
         if git diff --cached --quiet; then
-          echo "➡️  Sin cambios en el ZIP, omitiendo commit."
+          echo "➡️ Sin cambios. No se requiere commit."
           exit 0
         fi
 
         git commit -m "🤖 Auto-update FUENTES.zip [skip ci]"
 
-        # Actualizar con los últimos cambios del remoto
+        # 🔁 Actualizar antes de subir
         git pull --rebase origin main
 
         # Subir cambios
