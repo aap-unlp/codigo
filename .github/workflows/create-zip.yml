@@ -17,32 +17,20 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      # ← Removido fetch-depth y token problemáticos
     
-    - name: Debug current state
+    - name: Create fresh ZIP file
       run: |
-        echo "📁 Contenido REAL de FUENTES:"
-        ls -la FUENTES/
-        echo "🔍 Verificando dummy2.txt:"
-        if [ -f "FUENTES/dummy2.txt" ]; then
-          echo "❌ dummy2.txt EXISTE (problema!)"
-        else
-          echo "✅ dummy2.txt NO existe (correcto)"
-        fi
+        echo "📦 Creando ZIP completamente nuevo desde FUENTES..."
         
-    - name: Create ZIP file
-      run: |
-        echo "📦 Creando ZIP desde carpeta FUENTES..."
+        # Eliminar ZIP anterior para evitar contenido residual
+        rm -f FUENTES.zip
+        
         cd FUENTES
-        echo "Archivos que se incluirán en el ZIP:"
-        ls -la
         zip -r ../FUENTES.zip . -x "*.git*" "*.DS_Store*"
         cd ..
-        echo "✅ ZIP creado"
         
-    - name: Show ZIP contents
-      run: |
-        echo "📋 Contenido del ZIP creado:"
+        echo "✅ ZIP creado desde cero"
+        echo "📋 Contenido del ZIP:"
         unzip -l FUENTES.zip
         
     - name: Commit ZIP
