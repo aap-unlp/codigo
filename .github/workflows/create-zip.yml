@@ -3,9 +3,14 @@ on:
   push:
     branches: [ main, master ]
     paths:
-      - 'FUENTES/**'  # Carpeta que monitoreas
-  workflow_dispatch:    # Para ejecutar manualmente
-  
+      - 'FUENTES/**'
+  workflow_dispatch:
+
+# Permisos para el workflow
+permissions:
+  contents: write
+  actions: read
+
 jobs:
   create-zip:
     runs-on: ubuntu-latest
@@ -15,11 +20,13 @@ jobs:
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        fetch-depth: 0  # Necesario para push
     
     - name: Verify folder exists
       run: |
         if [ ! -d "FUENTES" ]; then
           echo "❌ La carpeta FUENTES no existe"
+          echo "📁 Contenido actual:"
           ls -la
           exit 1
         fi
@@ -27,22 +34,32 @@ jobs:
     
     - name: Create ZIP file
       run: |
+        echo "📦 Creando ZIP desde carpeta FUENTES..."
         cd FUENTES
         zip -r ../FUENTES.zip . -x "*.git*" "*.DS_Store*"
         cd ..
-        echo "✅ ZIP creado: FUENTES.zip"
+        echo "✅ ZIP creado exitosamente"
         ls -la FUENTES.zip
     
-    - name: Commit and push ZIP
+    - name: Check if ZIP needs update
+      id: check_changes
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action Bot"
-        
-        # Solo hacer commit si hay cambios
-        if [ -n "$(git status --porcelain)" ]; then
-          git add FUENTES.zip
-          git commit -m "🤖 Auto-update ZIP file [skip ci]"
-          git push
+        # Verificar si el ZIP cambió
+        if git diff --quiet FUENTES.zip 2>/dev/null; then
+          echo "changed=false" >> $GITHUB_OUTPUT
+          echo "ℹ️ ZIP no cambió"
         else
-          echo "No changes to commit"
+          echo "changed=true" >> $GITHUB_OUTPUT
+          echo "🔄 ZIP tiene cambios"
         fi
+    
+    - name: Commit and push ZIP
+      if: steps.check_changes.outputs.changed == 'true'
+      run: |
+        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        
+        git add FUENTES.zip
+        git commit -m "🤖 Auto-update FUENTES.zip [skip ci]"
+        git push origin ${{ github.ref_name }}
+        echo "✅ ZIP actualizado y pusheado"
