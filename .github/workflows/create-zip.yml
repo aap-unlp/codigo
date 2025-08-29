@@ -1,4 +1,5 @@
 name: Auto-generate ZIP on changes
+
 on:
   push:
     branches: [ main, master ]
@@ -17,27 +18,39 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    
+      with:
+        # Aseguramos que el repositorio se clone con todo el historial necesario
+        fetch-depth: 0
+
     - name: Create fresh ZIP file
       run: |
-        echo "📦 Creando ZIP completamente nuevo desde FUENTES..."
-        
-        # Eliminar ZIP anterior para evitar contenido residual
+        echo "📦 Eliminando ZIP anterior (si existe)..."
         rm -f FUENTES.zip
-        
+
+        # Verificar que se eliminó
+        if [ -f "FUENTES.zip" ]; then
+          echo "❌ Error: No se pudo eliminar FUENTES.zip"
+          exit 1
+        fi
+        echo "✅ FUENTES.zip eliminado correctamente"
+
+        echo "📁 Contenido actual de FUENTES/"
+        ls -la FUENTES/
+
+        echo "📦 Creando ZIP sincronizado desde cero..."
         cd FUENTES
-        zip -r ../FUENTES.zip . -x "*.git*" "*.DS_Store*"
+        zip -FSr ../FUENTES.zip . -x "*.git*" "*.DS_Store*" "*.zip" "*Thumbs.db"
         cd ..
-        
-        echo "✅ ZIP creado desde cero"
-        echo "📋 Contenido del ZIP:"
+
+        echo "✅ ZIP creado correctamente"
+        echo "📋 Contenido del ZIP generado:"
         unzip -l FUENTES.zip
-        
+
     - name: Commit ZIP
       run: |
         git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git config --local user.name "github-actions[bot]"
-        
+
         git add FUENTES.zip
-        git commit -m "🤖 Auto-update FUENTES.zip [skip ci]"
+        git commit -m "🤖 Auto-update FUENTES.zip [skip ci]" || echo "No changes to commit"
         git push
