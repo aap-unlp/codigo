@@ -1,65 +1,29 @@
 name: Auto-generate ZIP on changes
-
 on:
-  push:
-    branches: [ main, master ]
-    paths:
-      - 'FUENTES/**'
-  workflow_dispatch:
+  workflow_dispatch:  # Solo manual por ahora
 
 permissions:
   contents: write
-  actions: read
 
 jobs:
   create-zip:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
       with:
-        fetch-depth: 0  # Necesario para pull y push
-
-    - name: Create fresh ZIP file
+        token: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Create and commit ZIP
       run: |
-        echo "📦 Eliminando ZIP anterior (si existe)..."
+        # Crear ZIP limpio
         rm -f FUENTES.zip
-
-        if [ -f "FUENTES.zip" ]; then
-          echo "❌ Error: No se pudo eliminar FUENTES.zip"
-          exit 1
-        fi
-        echo "✅ FUENTES.zip eliminado correctamente"
-
-        echo "📁 Contenido actual de FUENTES/"
-        ls -la FUENTES/
-
-        echo "📦 Creando ZIP sincronizado desde cero..."
-        cd FUENTES
-        zip -FSr ../FUENTES.zip . -x "*.git*" "*.DS_Store*" "*.zip" "*Thumbs.db"
-        cd ..
-
-        echo "✅ ZIP creado correctamente"
-        echo "📋 Contenido del ZIP generado:"
-        unzip -l FUENTES.zip
-
-    - name: Commit ZIP
-      run: |
-        git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-
+        cd FUENTES && zip -r ../FUENTES.zip . && cd ..
+        
+        # Configurar git
+        git config user.email "action@github.com"
+        git config user.name "GitHub Action"
+        
+        # Simple commit y push
         git add FUENTES.zip
-
-        if git diff --cached --quiet; then
-          echo "➡️ Sin cambios. No se requiere commit."
-          exit 0
-        fi
-
-        git commit -m "🤖 Auto-update FUENTES.zip [skip ci]"
-
-        # 🔁 Actualizar antes de subir
-        git pull --rebase origin main
-
-        # Subir cambios
-        git push origin main
+        git commit -m "Update ZIP" || exit 0
+        git push || (git pull --rebase && git push)
