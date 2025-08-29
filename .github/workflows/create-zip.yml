@@ -19,7 +19,7 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
-        # Aseguramos que el repositorio se clone con todo el historial necesario
+        # Necesario para poder hacer pull y push
         fetch-depth: 0
 
     - name: Create fresh ZIP file
@@ -27,7 +27,6 @@ jobs:
         echo "📦 Eliminando ZIP anterior (si existe)..."
         rm -f FUENTES.zip
 
-        # Verificar que se eliminó
         if [ -f "FUENTES.zip" ]; then
           echo "❌ Error: No se pudo eliminar FUENTES.zip"
           exit 1
@@ -52,5 +51,17 @@ jobs:
         git config --local user.name "github-actions[bot]"
 
         git add FUENTES.zip
-        git commit -m "🤖 Auto-update FUENTES.zip [skip ci]" || echo "No changes to commit"
-        git push
+
+        # Verificar si hay cambios para commitear
+        if git diff --cached --quiet; then
+          echo "➡️  Sin cambios en el ZIP, omitiendo commit."
+          exit 0
+        fi
+
+        git commit -m "🤖 Auto-update FUENTES.zip [skip ci]"
+
+        # Actualizar con los últimos cambios del remoto
+        git pull --rebase origin main
+
+        # Subir cambios
+        git push origin main
